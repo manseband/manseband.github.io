@@ -1,1 +1,425 @@
-<h1>Hello World</h1>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone@7.10.3/babel.min.js" crossorigin></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="react,stage-3">
+
+      const { useState, useRef, useEffect } = React;
+
+      const PixelSorter = () => {
+        const [imageFile, setImageFile] = useState(null);
+        const [imagePreview, setImagePreview] = useState(null);
+        const [sortedImage, setSortedImage] = useState(null);
+        const [sortAxis, setSortAxis] = useState('horizontal');
+        const [sortingMethod, setSortingMethod] = useState('brightness');
+        const [threshold, setThreshold] = useState(50);
+        const [sortingInterval, setSortingInterval] = useState(1);
+        const [isProcessing, setIsProcessing] = useState(false);
+
+        const canvasRef = useRef(null);
+        const sortedCanvasRef = useRef(null);
+
+        // Handle file selection
+        const handleFileChange = (e) => {
+          const file = e.target.files[0];
+          if (file && file.type.match('image.*')) {
+            setImageFile(file);
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              setImagePreview(e.target.result);
+              setSortedImage(null);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+
+        // Draw image on canvas when preview is available
+        useEffect(() => {
+          if (imagePreview && canvasRef.current) {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+
+            const img = new Image();
+            img.onload = () => {
+              // Resize canvas to match image dimensions
+              canvas.width = img.width;
+              canvas.height = img.height;
+
+              // Draw image on canvas
+              ctx.drawImage(img, 0, 0);
+            };
+            img.src = imagePreview;
+          }
+        }, [imagePreview]);
+
+        // Sort pixels function
+        const sortPixels = () => {
+          setIsProcessing(true);
+
+          const canvas = canvasRef.current;
+          const ctx = canvas.getContext('2d');
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const pixels = imgData.data;
+
+          // Create a copy of the output canvas with the same dimensions
+          const sortedCanvas = sortedCanvasRef.current;
+          sortedCanvas.width = canvas.width;
+          sortedCanvas.height = canvas.height;
+          const sortedCtx = sortedCanvas.getContext('2d');
+
+          // Process based on axis
+          if (sortAxis === 'horizontal') {
+            sortHorizontally(pixels, canvas.width, canvas.height, sortedCtx);
+          } else {
+            sortVertically(pixels, canvas.width, canvas.height, sortedCtx);
+          }
+
+          setIsProcessing(false);
+          setSortedImage(sortedCanvas.toDataURL());
+        };
+
+        // Helper function to get pixel value for sorting
+        const getPixelValue = (r, g, b) => {
+          switch (sortingMethod) {
+            case 'brightness':
+              return (r + g + b) / 3;
+            case 'hue':
+              const max = Math.max(r, g, b);
+              const min = Math.min(r, g, b);
+              if (max === min) return 0;
+              let hue = 0;
+              if (max === r) {
+                hue = (g - b) / (max - min);
+              } else if (max === g) {
+                hue = 2 + (b - r) / (max - min);
+              } else {
+                hue = 4 + (r - g) / (max - min);
+              }
+              hue *= 60;
+              if (hue < 0) hue += 360;
+              return hue;
+            case 'saturation':
+              const max2 = Math.max(r, g, b);
+              const min2 = Math.min(r, g, b);
+              return max2 === 0 ? 0 : (max2 - min2) / max2;
+            default:
+              return r;
+          }
+        };
+
+        // Sort horizontally
+        const sortHorizontally = (pixels, width, height, sortedCtx) => {
+          const sortedImgData = new ImageData(width, height);
+          const sortedPixels = sortedImgData.data;
+
+          // Copy original pixels
+          for (let i = 0; i < pixels.length; i++) {
+            sortedPixels[i] = pixels[i];
+          }
+
+          const interval = Math.max(1, Math.floor(width * (sortingInterval / 100)));
+
+          // Process each row
+          for (let y = 0; y < height; y++) {
+            let intervals = [];
+            let startInterval = 0;
+            let inDarkSection = false;
+
+            // Find intervals to sort based on threshold
+            for (let x = 0; x < width; x++) {
+              const i = (y * width + x) * 4;
+              const r = pixels[i];
+              const g = pixels[i + 1];
+              const b = pixels[i + 2];
+              const brightness = (r + g + b) / 3;
+
+              if (!inDarkSection && brightness < threshold) {
+                inDarkSection = true;
+                startInterval = x;
+              } else if (inDarkSection && (brightness >= threshold || x === width - 1)) {
+                inDarkSection = false;
+                const endInterval = x;
+                if (endInterval - startInterval >= interval) {
+                  intervals.push([startInterval, endInterval]);
+                }
+              }
+            }
+
+            // If no intervals found based on threshold, sort the entire row
+            if (intervals.length === 0) {
+              intervals.push([0, width]);
+            }
+
+            // Sort each interval
+            for (let [start, end] of intervals) {
+              let pixelRow = [];
+
+              // Collect pixels for this interval
+              for (let x = start; x < end; x++) {
+                const i = (y * width + x) * 4;
+                pixelRow.push({
+                  r: pixels[i],
+                  g: pixels[i + 1],
+                  b: pixels[i + 2],
+                  a: pixels[i + 3],
+                  value: getPixelValue(pixels[i], pixels[i + 1], pixels[i + 2])
+                });
+              }
+
+              // Sort pixels
+              pixelRow.sort((a, b) => a.value - b.value);
+
+              // Place back sorted pixels
+              for (let x = start; x < end; x++) {
+                const i = (y * width + x) * 4;
+                const pixel = pixelRow[x - start];
+                sortedPixels[i] = pixel.r;
+                sortedPixels[i + 1] = pixel.g;
+                sortedPixels[i + 2] = pixel.b;
+                sortedPixels[i + 3] = pixel.a;
+              }
+            }
+          }
+
+          sortedCtx.putImageData(sortedImgData, 0, 0);
+        };
+
+        // Sort vertically
+        const sortVertically = (pixels, width, height, sortedCtx) => {
+          const sortedImgData = new ImageData(width, height);
+          const sortedPixels = sortedImgData.data;
+
+          // Copy original pixels
+          for (let i = 0; i < pixels.length; i++) {
+            sortedPixels[i] = pixels[i];
+          }
+
+          const interval = Math.max(1, Math.floor(height * (sortingInterval / 100)));
+
+          // Process each column
+          for (let x = 0; x < width; x++) {
+            let intervals = [];
+            let startInterval = 0;
+            let inDarkSection = false;
+
+            // Find intervals to sort based on threshold
+            for (let y = 0; y < height; y++) {
+              const i = (y * width + x) * 4;
+              const r = pixels[i];
+              const g = pixels[i + 1];
+              const b = pixels[i + 2];
+              const brightness = (r + g + b) / 3;
+
+              if (!inDarkSection && brightness < threshold) {
+                inDarkSection = true;
+                startInterval = y;
+              } else if (inDarkSection && (brightness >= threshold || y === height - 1)) {
+                inDarkSection = false;
+                const endInterval = y;
+                if (endInterval - startInterval >= interval) {
+                  intervals.push([startInterval, endInterval]);
+                }
+              }
+            }
+
+            // If no intervals found based on threshold, sort the entire column
+            if (intervals.length === 0) {
+              intervals.push([0, height]);
+            }
+
+            // Sort each interval
+            for (let [start, end] of intervals) {
+              let pixelColumn = [];
+
+              // Collect pixels for this interval
+              for (let y = start; y < end; y++) {
+                const i = (y * width + x) * 4;
+                pixelColumn.push({
+                  r: pixels[i],
+                  g: pixels[i + 1],
+                  b: pixels[i + 2],
+                  a: pixels[i + 3],
+                  value: getPixelValue(pixels[i], pixels[i + 1], pixels[i + 2])
+                });
+              }
+
+              // Sort pixels
+              pixelColumn.sort((a, b) => a.value - b.value);
+
+              // Place back sorted pixels
+              for (let y = start; y < end; y++) {
+                const i = (y * width + x) * 4;
+                const pixel = pixelColumn[y - start];
+                sortedPixels[i] = pixel.r;
+                sortedPixels[i + 1] = pixel.g;
+                sortedPixels[i + 2] = pixel.b;
+                sortedPixels[i + 3] = pixel.a;
+              }
+            }
+          }
+
+          sortedCtx.putImageData(sortedImgData, 0, 0);
+        };
+
+        // Download sorted image
+        const downloadImage = () => {
+          if (!sortedImage) return;
+
+          const link = document.createElement('a');
+          link.download = 'pixel-sorted-image.png';
+          link.href = sortedImage;
+          link.click();
+        };
+
+        return (
+          <div className="flex flex-col items-center p-4 max-w-4xl mx-auto">
+            <h1 className="text-3xl font-bold mb-6">Pixel Sorter</h1>
+
+            {/* Image Upload */}
+            <div className="w-full mb-6">
+              <label className="block mb-2 font-medium">Upload an image:</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="block w-full text-sm border border-gray-300 rounded p-2"
+              />
+            </div>
+
+            {/* Controls */}
+            {imagePreview && (
+              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block mb-2 font-medium">Sort Direction:</label>
+                  <select
+                    value={sortAxis}
+                    onChange={(e) => setSortAxis(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded"
+                  >
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium">Sort By:</label>
+                  <select
+                    value={sortingMethod}
+                    onChange={(e) => setSortingMethod(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded"
+                  >
+                    <option value="brightness">Brightness</option>
+                    <option value="hue">Hue</option>
+                    <option value="saturation">Saturation</option>
+                    <option value="red">Red Channel</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium">
+                    Threshold: {threshold}
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="255"
+                    value={threshold}
+                    onChange={(e) => setThreshold(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="text-sm text-gray-500">Pixels below this brightness value will be sorted</p>
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium">
+                    Minimum Interval: {sortingInterval}%
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="100"
+                    value={sortingInterval}
+                    onChange={(e) => setSortingInterval(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="text-sm text-gray-500">Minimum segment size as percentage of image dimension</p>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            {imagePreview && (
+              <div className="flex gap-4 mb-6">
+                <button
+                  onClick={sortPixels}
+                  disabled={isProcessing}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded disabled:bg-gray-400"
+                >
+                  {isProcessing ? 'Processing...' : 'Sort Pixels'}
+                </button>
+
+                {sortedImage && (
+                  <button
+                    onClick={downloadImage}
+                    className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded"
+                  >
+                    Download Result
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Canvas (hidden) */}
+            <div className="hidden">
+              <canvas ref={canvasRef}></canvas>
+              <canvas ref={sortedCanvasRef}></canvas>
+            </div>
+
+            {/* Image Preview */}
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+              {imagePreview && (
+                <div>
+                  <h3 className="text-xl font-medium mb-2">Original Image</h3>
+                  <img
+                    src={imagePreview}
+                    alt="Original"
+                    className="max-w-full h-auto border border-gray-300"
+                  />
+                </div>
+              )}
+
+              {sortedImage && (
+                <div>
+                  <h3 className="text-xl font-medium mb-2">Sorted Image</h3>
+                  <img
+                    src={sortedImage}
+                    alt="Sorted"
+                    className="max-w-full h-auto border border-gray-300"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById("root"))
+      root.render(<PixelSorter />);
+    </script>
+
+  </body>
+</html>

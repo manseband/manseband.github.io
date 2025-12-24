@@ -2,6 +2,7 @@ import { CanvasBackground } from "../graphics/canvasbackground.js";
 import { TILE } from "../tiles/tiledefs.js";
 import { Tilecode } from "../tiles/tilecode.js";
 import { TileRenderer } from "../graphics/tilerenderer.js";
+import { solve } from "../solver/solver.js";
 
 export class Game {
 	constructor(canvas, levelCode) {
@@ -21,6 +22,8 @@ export class Game {
         });
 
 		this.moveCount = 0;
+		// TODO find a better way to pass the shortest # of moves from the solver into here, without importing solver in this class
+		this.leastMoves = solve(this.map).pathLength;
 
 		this.handleInput = this.handleInput.bind(this);
         this.handleResize = this.handleResize.bind(this);
@@ -88,7 +91,8 @@ export class Game {
         if (this.map.numBoxesOnGoals() === this.map.numBoxes()) {
 			// Delay the pop-up until after the final state is drawn
 			setTimeout(() => {
-				alert(`Level beat in ${this.moveCount} moves!`); // TODO find a way to pass the shortest # of moves from the solver into here to compare
+				alert(`Level beat in ${this.moveCount} moves!\nLeast possible moves = ${leastMoves}.`);
+
 				window.removeEventListener("keydown", this.handleInput); // Stop listening for input
 			}, 0);
         }

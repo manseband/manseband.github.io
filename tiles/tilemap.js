@@ -65,8 +65,8 @@ export class Tilemap {
             return true;
         }
 
-        if (this.walls[x][y]) { this.walls[x][y] = false; return true; }
         if (this.goals[x][y]) { this.goals[x][y] = false; return true; }
+        if (this.walls[x][y]) { this.walls[x][y] = false; return true; }
     }
 
 	// Return a non-null array of all tiles of this type

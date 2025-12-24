@@ -17,8 +17,8 @@ export class Game {
 		this.background = new CanvasBackground(this.canvas, this.renderer, this.map, {
 			checksPerTileInside: 4,
             checksPerTileOutside: 8,
-            color1: "#c2d4f0",
-            color2: "#545c69"
+            color1: "#919fafff",
+            color2: "#626b78ff"
         });
 
 		this.moveCount = 0;

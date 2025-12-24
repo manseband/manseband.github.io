@@ -91,7 +91,7 @@ export class Game {
         if (this.map.numBoxesOnGoals() === this.map.numBoxes()) {
 			// Delay the pop-up until after the final state is drawn
 			setTimeout(() => {
-				alert(`Level beat in ${this.moveCount} moves!\nLeast possible moves = ${leastMoves}.`);
+				alert(`Level beat in ${this.moveCount} moves!\nLeast possible moves = ${this.leastMoves}.`);
 
 				window.removeEventListener("keydown", this.handleInput); // Stop listening for input
 			}, 0);

@@ -88,8 +88,13 @@ export class Game {
         if (this.map.numBoxesOnGoals() === this.map.numBoxes()) {
 			// Delay the pop-up until after the final state is drawn
 			setTimeout(() => {
-				alert(`Map beat in ${this.moveCount} moves!\nLeast possible moves = ${this.leastMoves}.`);
-
+				let message = `Map beat in ${this.moveCount} moves.`;
+				if (this.moveCount === this.leastMoves) {
+					message += "\nYou made the least possible moves!";
+				} else {
+					message += `\nLeast possible moves = ${this.leastMoves}`;
+				}
+				alert(message);
 				window.removeEventListener("keydown", this.handleInput); // Stop listening for input
 			}, 0);
         }

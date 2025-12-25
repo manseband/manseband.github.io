@@ -150,8 +150,7 @@ export class Editor {
 			return;
 		}
 
-		alert(`Shortest winning path found with length: ${result.shortestPath}`);
 		const packed = this.map.normalizedCopy();
-		alert(`Your exported map code: ${toMapCode(packed)}`);
+		alert(`Shortest winning path found of length ${result.shortestPath}.\nYour exported map code: ${toMapCode(packed)}`);
     }
 }

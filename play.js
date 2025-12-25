@@ -4,7 +4,7 @@ import { loadMapFromCode } from "./tiles/maploader.js";
 
 const canvas = document.querySelector(".myCanvas");
 
-// URL format: site.com/?level=<map code>
+// URL format: site.com/?level={mapCode}
 const params = new URLSearchParams(window.location.search);
 const mapCode = params.get("map"); // This will return String
 
@@ -41,14 +41,12 @@ loadTileAssets(() => {
 		return;
 	}
 
-	let game = new Game(canvas, map, shortestPath);
+	// Instantiate the game with a clone of the map, so that the original can be used to reset it
+	let game = new Game(canvas, map.clone(), shortestPath);
 
 	// Setup reset button
 	const resetButton = document.getElementById("resetButton");
-	resetButton.onclick = () => {
-		const result = loadMapFromCode(mapCode);
-		game = game.reset(result.map, result.shortestPath);
-	};
+	resetButton.onclick = () => game = game.reset(map.clone(), shortestPath);
 
 	// Fade out overlay
 	const overlay = document.getElementById("fadeOverlay");

@@ -39,7 +39,7 @@ export function fromMapCodeSafe(str) {
 		const map = fromMapCode(str);
 		return { ok: true, map };
 	} catch (e) {
-		return { ok: false, error: "Malformed level code." };
+		return { ok: false, error: "Malformed map code." };
 	}
 }
 

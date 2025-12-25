@@ -1,5 +1,4 @@
-import { fromMapCodeSafe } from "../tiles/tilecode.js";
-import { validateMap } from "../tiles/mapvalidator.js";
+import { loadMapFromCode } from "./tiles/maploader.js";
 
 const playBtn = document.getElementById("playBtn");
 const buildBtn = document.getElementById("buildBtn");
@@ -17,26 +16,21 @@ buildBtn.onclick = () => {
 };
 
 loadBtn.onclick = () => {
-	const levelCode = levelInput.value.trim();
-	if (!levelCode) {
-		alert("Please enter a level code.");
+	const mapCode = levelInput.value.trim(); // Trim whitespace
+	if (!mapCode) {
+		alert("Please enter a map code.");
 		return;
 	}
 
-	const decoded = fromMapCodeSafe(levelCode);
-    if (!decoded.ok) {
-		alert(decoded.error);
-        return;
-    }
+	// Try to load the map, but don't save it yet - this will be done on the next page (this is purely for early error handling)
+	try {
+		loadMapFromCode(mapCode);
+	} catch (err) {
+		alert(err.message);
+		return;
+	}
 
-	const validation = validateMap(decoded.map); // I get shortest path from here, can pass to game!
-    if (!validation.ok) {
-		alert(validation.error);
-		// alert("Map is invalid.");
-        return;
-    }
-
-	window.location.href = `play.html?level=${encodeURIComponent(levelCode)}`;
+	window.location.href = `play.html?map=${encodeURIComponent(mapCode)}`;
 };
 
 // Optional: press Enter to load

@@ -1,16 +1,14 @@
 import { CanvasBackground } from "../graphics/canvasbackground.js";
 import { TILE } from "../tiles/tiledefs.js";
-import { fromMapCodeSafe } from "../tiles/tilecode.js";
 import { TileRenderer } from "../graphics/tilerenderer.js";
-import { solve } from "../tiles/solver.js";
 
 export class Game {
-	constructor(canvas, levelCode) {
+	constructor(canvas, map, shortestPath) {
 		this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.resizeCanvas();
 
-        this.map = fromMapCodeSafe(levelCode).map; // TODO remove from here, have map already passed in
+        this.map = map;
 
 		this.renderer = new TileRenderer(this.ctx, this.map.width, this.map.height, this.canvas.width, this.canvas.height);
 
@@ -22,8 +20,7 @@ export class Game {
         });
 
 		this.moveCount = 0;
-		// TODO find a better way to pass the shortest # of moves from the solver into here, without importing solver in this class
-		this.leastMoves = solve(this.map).pathLength;
+		this.leastMoves = shortestPath;
 
 		this.handleInput = this.handleInput.bind(this);
         this.handleResize = this.handleResize.bind(this);
@@ -91,7 +88,7 @@ export class Game {
         if (this.map.numBoxesOnGoals() === this.map.numBoxes()) {
 			// Delay the pop-up until after the final state is drawn
 			setTimeout(() => {
-				alert(`Level beat in ${this.moveCount} moves!\nLeast possible moves = ${this.leastMoves}.`);
+				alert(`Map beat in ${this.moveCount} moves!\nLeast possible moves = ${this.leastMoves}.`);
 
 				window.removeEventListener("keydown", this.handleInput); // Stop listening for input
 			}, 0);
@@ -103,9 +100,9 @@ export class Game {
         this.renderer.drawMap(this.map);
     }
 
-	reset(levelCode) {
+	reset(map, shortestPath) {
         this.destroy();
-        return new Game(this.canvas, levelCode);
+        return new Game(this.canvas, map, shortestPath);
     }
 
 	destroy() {

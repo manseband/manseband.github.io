@@ -3,9 +3,9 @@ import { Editor } from "./editor/editor.js";
 
 const canvas = document.querySelector(".myCanvas");
 
-// Map size for the editor
-const EDITOR_MAP_W = 20;
-const EDITOR_MAP_H = 20;
+// Map size for the editor (max 36x36 supported by the encoder)
+const EDITOR_MAP_W = 16;
+const EDITOR_MAP_H = 16;
 
 // Load tile images first
 loadTileAssets(() => {

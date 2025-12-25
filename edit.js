@@ -7,11 +7,9 @@ const canvas = document.querySelector(".myCanvas");
 const EDITOR_MAP_W = 20;
 const EDITOR_MAP_H = 20;
 
-let editor;
-
 // Load tile images first
 loadTileAssets(() => {
-    editor = new Editor(canvas, EDITOR_MAP_W, EDITOR_MAP_H);
+    let editor = new Editor(canvas, EDITOR_MAP_W, EDITOR_MAP_H);
 
     // Setup tilebar buttons
     const buttons = document.querySelectorAll(".tilebar-button");
@@ -21,6 +19,10 @@ loadTileAssets(() => {
             editor.selectTile(tile);
         };
     });
+
+	// Setup clear button
+	const clearButton = document.getElementById("clearButton");
+	clearButton.onclick = () => editor.clearMap();
 
 	// Setup export button
 	const exportButton = document.getElementById("exportButton");

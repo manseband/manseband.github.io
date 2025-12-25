@@ -1,8 +1,8 @@
 import { CanvasBackground } from "../graphics/canvasbackground.js";
 import { TILE } from "../tiles/tiledefs.js";
-import { Tilecode } from "../tiles/tilecode.js";
+import { fromMapCodeSafe } from "../tiles/tilecode.js";
 import { TileRenderer } from "../graphics/tilerenderer.js";
-import { solve } from "../solver/solver.js";
+import { solve } from "../tiles/solver.js";
 
 export class Game {
 	constructor(canvas, levelCode) {
@@ -10,7 +10,7 @@ export class Game {
         this.ctx = canvas.getContext("2d");
         this.resizeCanvas();
 
-        this.map = Tilecode.fromMapCode(levelCode);
+        this.map = fromMapCodeSafe(levelCode).map; // TODO remove from here, have map already passed in
 
 		this.renderer = new TileRenderer(this.ctx, this.map.width, this.map.height, this.canvas.width, this.canvas.height);
 

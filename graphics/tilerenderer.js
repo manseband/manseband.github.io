@@ -55,7 +55,7 @@ export class TileRenderer {
     }
 
     drawMap(map) {
-		// Loop through all TILE types and draw them (drawing order dictated by order of appearance in tiledefs/TILE)
+		// Loop through all TILE types and draw them (drawing order dictated by order of appearance in TILE)
 		// TODO if a box is on a goal, draw using a different sprite to show this!
         for (const type of Object.values(TILE)) {
             for (const tile of map.getTiles(type)) {

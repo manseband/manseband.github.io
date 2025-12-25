@@ -4,9 +4,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Home</title>
-    <!-- <script type="module" src="index.js" defer></script> -->
+    <script type="module" src="index.js" defer></script>
     <link href="index.css" rel="stylesheet" />
   </head>
   <body>
+	<div class="menu">
+    <button id="playBtn" class="main-button">Play</button>
+
+    <div id="playInput" class="play-input hidden">
+      <input id="levelInput" type="text" placeholder="Paste level code here" spellcheck="false" autocomplete="off"/>
+      <button id="loadBtn" class="small-button">Load</button>
+    </div>
+
+	<button id="buildBtn" class="main-button">Build</button>
+  </div>
   </body>
 </html>

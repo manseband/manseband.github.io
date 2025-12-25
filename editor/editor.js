@@ -1,9 +1,9 @@
 import { CanvasBackground } from "../graphics/canvasbackground.js";
+import { TileRenderer } from "../graphics/tilerenderer.js";
 import { TILE } from "../tiles/tiledefs.js";
 import { Tilemap } from "../tiles/tilemap.js";
-import { Tilecode } from "../tiles/tilecode.js";
-import { TileRenderer } from "../graphics/tilerenderer.js";
-import { solve } from "../solver/solver.js";
+import { toMapCode } from "../tiles/tilecode.js";
+import { validateMap } from "../tiles/mapvalidator.js";
 
 export class Editor {
     constructor(canvas, mapWidth, mapHeight) {
@@ -48,6 +48,12 @@ export class Editor {
         window.removeEventListener("mouseup", this.handleMouseUp);
         window.removeEventListener("resize", this.handleResize);
     }
+
+	clearMap() {
+		this.map = new Tilemap(this.map.width, this.map.height);
+		this.background.map = this.map;
+		this.redraw();
+	}
 
 	// Maximize the canvas
 	resizeCanvas() {
@@ -129,7 +135,7 @@ export class Editor {
 
         if (this.hoveredTile) {
 			// Draw ghost tile
-            this.renderer.drawTile(this.currentTileType, this.hoveredTile.x, this.hoveredTile.y, 0.4);
+            this.renderer.drawTile(this.currentTileType, this.hoveredTile.x, this.hoveredTile.y, 0.5);
         }
     }
 
@@ -138,36 +144,14 @@ export class Editor {
     }
 
     tryExport() {
-        if (this.isMapValid()) {
-            const packed = this.map.normalizedCopy();
-            // console.log(packed.toString());
-            alert(`Your exported map code: ${Tilecode.toMapCode(packed)}`);
-        }
-    }
+		const result = validateMap(this.map);
+        if (!result.ok) {
+			alert(result.error);
+			return;
+		}
 
-    isMapValid() {
-        if (!this.map.hasPlayer()) {
-            alert("Player missing!");
-            return false;
-        }
-        if (this.map.numBoxes() < 1) {
-            alert("No boxes!");
-            return false;
-        }
-        if (this.map.numBoxes() > this.map.numGoals()) {
-            alert("More boxes than goals!");
-            return false;
-        }
-        if (!this.map.isEverythingEnclosed()) {
-            alert("Your player, boxes and/or goals are not fully enclosed by walls!");
-            return false;
-        }
-        const result = solve(this.map);
-        if (!result.solvable) {
-            alert("This puzzle has no solution.");
-            return false;
-        }
-        alert(`Shortest winning path found with length ${result.pathLength}.`);
-        return true;
+		alert(`Shortest winning path found with length: ${result.shortestPath}`);
+		const packed = this.map.normalizedCopy();
+		alert(`Your exported map code: ${toMapCode(packed)}`);
     }
 }

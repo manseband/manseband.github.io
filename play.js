@@ -19,6 +19,7 @@ const mapCode = params.get("map"); // This will return String
 // 080b2-12nrmkd45wu9g7jwhq-0k1w10-0z171f-24
 // 080b2-9jvpglncz6yw3cgn2-0k1w10-0z171f-24 <- Above but more moves
 // 080b2-9jvpgloiklae9znem-0k1w10-171f1i-24 <- Above but even more moves
+// 08092-qvnoxnmfytg1tq-0y0q0s0t-16171e1f-0a <- David W. Skinner
 
 if (!mapCode) {
     alert("No map code provided!");

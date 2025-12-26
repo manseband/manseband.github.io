@@ -1,5 +1,3 @@
-import { TILE } from "./tiledefs.js";
-
 // TODO remove all superfluous comments
 export class SokobanSolver {
     constructor(tilemap) {
@@ -28,16 +26,22 @@ export class SokobanSolver {
      */
     solve() {
         // Basic validation
-        if (!this.tilemap.hasPlayer() ||
-			this.tilemap.numBoxes() === 0 ||
-			this.tilemap.numBoxes() !== this.tilemap.numGoals()) {
-			return { solvable: false, pathLength: null };
-		}
+        if (!this.tilemap.hasPlayer()) {
+            return { solvable: false, pathLength: null };
+        }
+        if (this.tilemap.numBoxes() === 0) {
+            return { solvable: false, pathLength: null };
+        }
+        if (this.tilemap.numBoxes() !== this.tilemap.numGoals()) {
+            return { solvable: false, pathLength: null };
+        }
 
         // Check if any box is already on a dead square
-        for (const box of this.tilemap.getTiles(TILE.BOX)) {
-			if (this.deadSquares[box.x][box.y]) return { solvable: false, pathLength: null };
-		}
+        for (const box of this.tilemap.boxes) {
+            if (this.deadSquares[box.x][box.y]) {
+                return { solvable: false, pathLength: null };
+            }
+        }
 
         // BFS search
         const visited = new Set();
@@ -57,24 +61,28 @@ export class SokobanSolver {
             { dx: 1, dy: 0 }   // right
         ];
 
-		while (queue.length > 0) {
-			const state = queue.shift();
+        while (queue.length > 0) {
+            const state = queue.shift();
 
-			// Check if won
-			if (this.isWinState(state.boxes)) return { solvable: true, pathLength: state.depth };
+            // Check if won
+            if (this.isWinState(state.boxes)) {
+                return { solvable: true, pathLength: state.depth };
+            }
 
-			// Try all moves
-			for (const { dx, dy } of directions) {
-				for (const newState of this.tryMove(state, dx, dy)) {
-					const hash = this.hashState(newState);
-					if (!visited.has(hash)) {
-						visited.add(hash);
-						newState.depth = state.depth + 1;
-						queue.push(newState);
-					}
-				}
-			}
-		}
+            // Try all moves
+            for (const dir of directions) {
+                const newStates = this.tryMove(state, dir.dx, dir.dy);
+
+                for (const newState of newStates) {
+                    const hash = this.hashState(newState);
+                    if (!visited.has(hash)) {
+                        visited.add(hash);
+                        newState.depth = state.depth + 1;
+                        queue.push(newState);
+                    }
+                }
+            }
+        }
 
         return { solvable: false, pathLength: null };
     }
@@ -86,16 +94,25 @@ export class SokobanSolver {
         const newX = state.playerX + dx;
         const newY = state.playerY + dy;
 
-		// Move is invalid if it is out of bounds or inside a wall
-		if (!this.tilemap.inBounds(newX, newY) || this.tilemap.has(TILE.WALL, newX, newY)) return [];
+        // Check bounds
+        if (!this.tilemap.inBounds(newX, newY)) return [];
+
+        // Check wall
+        if (this.tilemap.walls[newX][newY]) return [];
 
         // Check if there's a box
         const boxIndex = state.boxes.findIndex(b => b.x === newX && b.y === newY);
 
-		// No box, simple move
-		if (boxIndex === -1) return [{ playerX: newX, playerY: newY, boxes: state.boxes }];
+        if (boxIndex === -1) {
+            // No box, simple move
+            return [{
+                playerX: newX,
+                playerY: newY,
+                boxes: state.boxes
+            }];
+        }
 
-        // If there's a box, try to push it
+        // There's a box, try to push it
         const boxNewX = newX + dx;
         const boxNewY = newY + dy;
 
@@ -112,14 +129,18 @@ export class SokobanSolver {
             i === boxIndex ? { x: boxNewX, y: boxNewY } : b
         ).sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
 
-        return [{ playerX: newX, playerY: newY, boxes: newBoxes }];
+        return [{
+            playerX: newX,
+            playerY: newY,
+            boxes: newBoxes
+        }];
     }
 
     /**
      * Check if all boxes are on goals
      */
     isWinState(boxes) {
-        return boxes.every(b => this.tilemap.has(TILE.GOAL, b.x, b.y));
+        return boxes.every(box => this.tilemap.goals[box.x][box.y]);
     }
 
     /**
@@ -139,10 +160,12 @@ export class SokobanSolver {
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
                 // Walls and goals are not dead squares
-                if (this.tilemap.has(TILE.WALL, x, y) || this.tilemap.has(TILE.GOAL, x, y)) continue;
+                if (this.tilemap.walls[x][y] || this.tilemap.goals[x][y]) continue;
 
                 // Check if box in this square can never reach a goal
-                if (this.isDeadSquare(x, y)) dead[x][y] = true;
+                if (this.isDeadSquare(x, y)) {
+                    dead[x][y] = true;
+                }
             }
         }
 
@@ -154,13 +177,13 @@ export class SokobanSolver {
      */
     isDeadSquare(x, y) {
         // If it's a goal, it's not dead
-        if (this.tilemap.has(TILE.GOAL, x, y)) return false;
+        if (this.tilemap.goals[x][y]) return false;
 
         // Check for corner deadlocks
-        const up = y === 0 || this.tilemap.has(TILE.WALL, x, y - 1);
-		const down = y === this.height - 1 || this.tilemap.has(TILE.WALL, x, y + 1);
-		const left = x === 0 || this.tilemap.has(TILE.WALL, x - 1, y);
-		const right = x === this.width - 1 || this.tilemap.has(TILE.WALL, x + 1, y);
+        const up = y > 0 ? this.tilemap.walls[x][y - 1] : true;
+        const down = y < this.height - 1 ? this.tilemap.walls[x][y + 1] : true;
+        const left = x > 0 ? this.tilemap.walls[x - 1][y] : true;
+        const right = x < this.width - 1 ? this.tilemap.walls[x + 1][y] : true;
 
         // Corner cases: if blocked on two adjacent sides, it's dead
         if ((up && left) || (up && right) || (down && left) || (down && right)) {

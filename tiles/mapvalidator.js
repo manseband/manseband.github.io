@@ -23,6 +23,7 @@ export function validateMap(map) {
 	const conflictCheck = checkConflictingTiles(map);
 	if (!conflictCheck.ok) return conflictCheck;
 
+	// TODO timeout if takes too long!
 	const result = solve(map);
 	if (!result.solvable)
 		return { ok: false, error: "This puzzle has no solution." };

@@ -144,6 +144,7 @@ export class Editor {
     }
 
     tryExport() {
+		// console.log(this.map.normalizedCopy().toString()); // For external solver debugging
 		const result = validateMap(this.map);
         if (!result.ok) {
 			alert(result.error);

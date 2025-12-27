@@ -156,8 +156,8 @@ export class Tilemap {
 		for (let y = 0; y < this.height; y++) {
 			let row = '';
 			for (let x = 0; x < this.width; x++) {
-				if (this.has(TILE.PLAYER, x, y)) row += 'P';
-				else if (this.has(TILE.BOX, x, y)) row += 'B';
+				if (this.has(TILE.PLAYER, x, y)) row += '@';
+				else if (this.has(TILE.BOX, x, y)) row += '$';
 				else if (this.has(TILE.WALL, x, y)) row += '#';
 				else if (this.has(TILE.GOAL, x, y)) row += '.';
 				else row += ' ';

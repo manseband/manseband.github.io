@@ -28,7 +28,7 @@ export function toMapCode(map) {
 	const playerStr = map.player ? encodeFixed36(map.player.y * width + map.player.x, W): '';
 
 	// Width + height both encoded as 2 digits each
-	const header = encodeFixed36(width, 2) + encodeFixed36(height, 2) + W.toString(36);
+	const header = encodeFixed36(width, 2) + encodeFixed36(height, 2) + encodeFixed36(W, 2);
 
 	return `${header}-${wallsStr}-${boxesStr}-${goalsStr}-${playerStr}`;
 }
@@ -49,7 +49,7 @@ function fromMapCode(str) {
 
 	const width  = parseInt(header.slice(0, 2), 36);
 	const height = parseInt(header.slice(2, 4), 36);
-	const W      = parseInt(header[4], 36);
+	const W      = parseInt(header.slice(4, 6), 36);
 	const map = new Tilemap(width, height);
 
 	const wallsBits = base36ToBigInt(wallsStr).toString(2).padStart(width * height, '0');

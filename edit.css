@@ -15,7 +15,7 @@ body {
 	left: 50%;
 	transform: translateX(-50%);
 	/* Place at bottom of screen */
-	bottom: 5vh;
+	bottom: 3vh;
 
 	display: flex;
 	justify-content: center;

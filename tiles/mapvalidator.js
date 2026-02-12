@@ -14,8 +14,8 @@ export function validateMap(map) {
 	if (map.numBoxes() < 1)
 		return { ok: false, error: "No boxes!" };
 
-	if (map.numBoxes() > map.numGoals())
-		return { ok: false, error: "More boxes than goals!" };
+	if (map.numBoxes() !== map.numGoals())
+		return { ok: false, error: "Box count not equal to goal count!" };
 
 	if (!isEverythingEnclosed(map))
 		return { ok: false, error: "Map is not enclosed by walls!" };
